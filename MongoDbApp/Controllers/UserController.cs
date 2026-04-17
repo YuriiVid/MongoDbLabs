@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using MongoDbApp.Models;
 using MongoDbApp.Repositories;
@@ -10,14 +11,19 @@ namespace MongoDbApp.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserRepository _repository;
+    private readonly IMapper _mapper;
 
-    public UserController(IUserRepository repository) => _repository = repository;
+    public UserController(IUserRepository repository, IMapper mapper)
+    {
+        _repository = repository;
+        _mapper = mapper;
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserListViewModel>>> Get()
     {
         var users = await _repository.GetAllAsync();
-        var result = users.Select(u => new UserListViewModel(u.Id!, u.Name, u.Role));
+        var result = _mapper.Map<IEnumerable<UserListViewModel>>(users);
         return Ok(result);
     }
 
@@ -25,30 +31,46 @@ public class UserController : ControllerBase
     public async Task<ActionResult<UserDetailsViewModel>> Get(string id)
     {
         var user = await _repository.GetByIdAsync(id);
-        if (user is null) return NotFound();
+        if (user is null)
+            return NotFound();
 
-        return new UserDetailsViewModel(user.Id!, user.Name, user.Email, user.Role);
+        return _mapper.Map<UserDetailsViewModel>(user);
     }
 
     [HttpPost]
     public async Task<IActionResult> Post(UserCreateViewModel model)
     {
-        var user = new User
-        {
-            Name = model.Name,
-            Email = model.Email,
-            Role = model.Role
-        };
+        var user = _mapper.Map<User>(model);
 
         await _repository.CreateAsync(user);
-        return CreatedAtAction(nameof(Get), new { id = user.Id }, new UserDetailsViewModel(user.Id!, user.Name, user.Email, user.Role));
+        return CreatedAtAction(
+            nameof(Get),
+            new { id = user.Id },
+            _mapper.Map<UserDetailsViewModel>(user)
+        );
+    }
+
+    [HttpPut("{id:length(24)}")]
+    public async Task<IActionResult> Put(string id, UserUpdateViewModel model)
+    {
+        var user = await _repository.GetByIdAsync(id);
+        if (user is null)
+            return NotFound();
+
+        var updatedUser = _mapper.Map<User>(model);
+        updatedUser.Id = id;
+        updatedUser.InternalSecret = user.InternalSecret;
+
+        await _repository.UpdateAsync(id, updatedUser);
+        return NoContent();
     }
 
     [HttpPatch("{id:length(24)}/name")]
     public async Task<IActionResult> UpdateName(string id, UserUpdateNameViewModel model)
     {
         var user = await _repository.GetByIdAsync(id);
-        if (user is null) return NotFound();
+        if (user is null)
+            return NotFound();
 
         await _repository.UpdateNameAsync(id, model.Name);
         return NoContent();
@@ -58,7 +80,8 @@ public class UserController : ControllerBase
     public async Task<IActionResult> Delete(string id)
     {
         var user = await _repository.GetByIdAsync(id);
-        if (user is null) return NotFound();
+        if (user is null)
+            return NotFound();
 
         await _repository.DeleteAsync(id);
         return NoContent();
