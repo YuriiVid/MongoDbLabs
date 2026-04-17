@@ -1,0 +1,37 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.tmp
+*.log
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# NuGet packages
+packages/
+*.nupkg
+
+# ASP.NET Core
+appsettings.Development.json
+
+# MongoDB (if any local data)
+*.db
+*.lock
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
