@@ -1,4 +1,3 @@
-using AutoMapper;
 using MongoDbApp.Models;
 using MongoDbApp.Profiles;
 using MongoDbApp.Repositories;
@@ -6,6 +5,12 @@ using MongoDbApp.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetSection("RedisCache:ConnectionString").Value;
+    options.InstanceName = builder.Configuration.GetSection("RedisCache:InstanceName").Value;
+});
 
 builder.Services.AddControllers();
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));

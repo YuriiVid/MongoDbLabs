@@ -1,8 +1,11 @@
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDbApp.Models;
 using MongoDbApp.Repositories;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace MongoDbApp.IntegrationTests;
@@ -12,6 +15,8 @@ public class UserRepositoryTests
 {
     private UserRepository _userRepository = null!;
     private IMongoCollection<User> _usersCollection = null!;
+    private IDistributedCache _cache = null!;
+    private ILogger<UserRepository> _logger = null!;
 
     private const string TestDatabaseName = "UserDatabaseTests";
     private const string ConnectionString = "mongodb://localhost:27017";
@@ -29,7 +34,9 @@ public class UserRepositoryTests
             }
         );
 
-        _userRepository = new UserRepository(settings);
+        _cache = Substitute.For<IDistributedCache>();
+        _logger = Substitute.For<ILogger<UserRepository>>();
+        _userRepository = new UserRepository(settings, _cache, _logger);
 
         var client = new MongoClient(ConnectionString);
         var database = client.GetDatabase(TestDatabaseName);
